@@ -58,9 +58,9 @@ def main():
         print("\n3. Logging Breakfast:")
         today = datetime.now().strftime('%Y-%m-%d')
         breakfast_items = [
-            FoodDatabase.estimate_calories('eggs', 100),
-            FoodDatabase.estimate_calories('bread', 50),
-            FoodDatabase.estimate_calories('banana', 120)
+            FoodDatabase.estimate_calories('eggs', FoodDatabase.parse_amount('2', 'piece'), '2 pieces'),
+            FoodDatabase.estimate_calories('bread', FoodDatabase.parse_amount('2', 'slice'), '2 slices'),
+            FoodDatabase.estimate_calories('banana', FoodDatabase.parse_amount('1', 'piece'), '1 piece')
         ]
         
         breakfast_total = sum(item['calories'] for item in breakfast_items)
@@ -78,9 +78,9 @@ def main():
         # 4. Log lunch
         print("\n4. Logging Lunch:")
         lunch_items = [
-            FoodDatabase.estimate_calories('chicken breast', 150),
-            FoodDatabase.estimate_calories('rice', 200),
-            FoodDatabase.estimate_calories('broccoli', 100)
+            FoodDatabase.estimate_calories('chicken breast', FoodDatabase.parse_amount('1', 'serving'), '1 serving'),
+            FoodDatabase.estimate_calories('rice', FoodDatabase.parse_amount('1', 'bowl'), '1 bowl'),
+            FoodDatabase.estimate_calories('broccoli', FoodDatabase.parse_amount('1', 'serving'), '1 serving')
         ]
         
         lunch_total = sum(item['calories'] for item in lunch_items)
@@ -108,20 +108,21 @@ def main():
         # 6. Check if we can eat a snack
         print("\n6. Checking Potential Snack:")
         snack_options = [
-            ('apple', 150),
-            ('cookie', 50),
-            ('chips', 100),
-            ('yogurt', 150)
+            ('apple', '1', 'piece'),
+            ('cookie', '1', 'piece'),
+            ('chips', '1', 'handful'),
+            ('yogurt', '1', 'cup')
         ]
         
-        for food, amount in snack_options:
-            estimate = FoodDatabase.estimate_calories(food, amount)
+        for food, amount, unit in snack_options:
+            amount_g = FoodDatabase.parse_amount(amount, unit)
+            estimate = FoodDatabase.estimate_calories(food, amount_g, f'{amount} {unit}')
             fit_status = "✓ Fits" if estimate['calories'] <= remaining else "✗ Too much"
-            print(f"   {food.title()} ({amount}g): {round(estimate['calories'])} cal - {fit_status}")
+            print(f"   {food.title()} ({amount} {unit}): {round(estimate['calories'])} cal - {fit_status}")
         
         # 7. Log a healthy snack
         print("\n7. Logging Healthy Snack (Apple):")
-        snack_items = [FoodDatabase.estimate_calories('apple', 150)]
+        snack_items = [FoodDatabase.estimate_calories('apple', FoodDatabase.parse_amount('1', 'piece'), '1 piece')]
         snack_total = sum(item['calories'] for item in snack_items)
         
         tracker.data['meals'][today].append({

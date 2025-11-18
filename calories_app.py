@@ -78,9 +78,57 @@ class CalorieCalculator:
         # Ensure minimum safe calorie intake
         return max(target, 1200 if True else 1500)  # 1200 for female, 1500 for male
 
+    @staticmethod
+    def daily_deficit_for_rate(weight_loss_rate: str) -> float:
+        """
+        Return the intended daily calorie deficit for the given weight loss rate.
+        slow -> ~275/day, moderate -> ~550/day, fast -> ~825/day
+        """
+        mapping = {
+            'slow': 7700 * 0.25 / 7,
+            'moderate': 7700 * 0.5 / 7,
+            'fast': 7700 * 0.75 / 7,
+        }
+        return mapping.get(weight_loss_rate.lower(), 7700 * 0.5 / 7)
+    
+    @staticmethod
+    def calculate_ideal_weight_tdee(current_weight: float, ideal_weight: float, height_cm: float, age: int, gender: str, activity_level: str) -> float:
+        """
+        Calculate TDEE at ideal weight (maintenance calories at goal).
+        
+        Args:
+            current_weight: Current weight in kg
+            ideal_weight: Target weight in kg
+            height_cm: Height in centimeters
+            age: Age in years
+            gender: 'male' or 'female'
+            activity_level: Activity level string
+        
+        Returns:
+            TDEE at ideal weight
+        """
+        ideal_bmr = CalorieCalculator.calculate_bmr(ideal_weight, height_cm, age, gender)
+        ideal_tdee = CalorieCalculator.calculate_tdee(ideal_bmr, activity_level)
+        return ideal_tdee
+
 
 class FoodDatabase:
     """Simple food calorie database with estimation capability."""
+    
+    # Serving size multipliers (converts to grams)
+    SERVING_SIZES = {
+        'small': 80,
+        'medium': 150,
+        'large': 250,
+        'serving': 100,
+        'piece': 50,
+        'slice': 30,
+        'cup': 240,  # ml/g for liquids
+        'bowl': 300,
+        'handful': 30,
+        'tbsp': 15,
+        'tsp': 5,
+    }
     
     # Common foods with approximate calories per 100g or per serving
     FOOD_CALORIES = {
@@ -136,7 +184,37 @@ class FoodDatabase:
     }
     
     @staticmethod
-    def estimate_calories(food_name: str, amount_g: float = 100) -> Optional[Dict]:
+    def parse_amount(amount_str: str, unit: str = 'g') -> float:
+        """
+        Parse amount and unit to convert to grams.
+        
+        Args:
+            amount_str: Amount as string or number
+            unit: Unit type (g, ml, serving, piece, small, medium, large, etc.)
+        
+        Returns:
+            Amount in grams
+        """
+        try:
+            amount = float(amount_str)
+        except (ValueError, TypeError):
+            amount = 1
+        
+        unit_lower = unit.lower().strip()
+        
+        # Direct gram or ml input
+        if unit_lower in ['g', 'gram', 'grams', 'ml', 'milliliter', 'milliliters']:
+            return amount
+        
+        # Serving size multipliers
+        if unit_lower in FoodDatabase.SERVING_SIZES:
+            return amount * FoodDatabase.SERVING_SIZES[unit_lower]
+        
+        # Default to 100g per unit if unknown
+        return amount * 100
+    
+    @staticmethod
+    def estimate_calories(food_name: str, amount_g: float = 100, amount_display: str = None) -> Optional[Dict]:
         """
         Estimate calories for a given food.
         
@@ -148,6 +226,7 @@ class FoodDatabase:
             Dictionary with food info and estimated calories, or None if not found
         """
         food_lower = food_name.lower().strip()
+        display = amount_display if amount_display else f"{amount_g}g"
         
         # Direct match
         if food_lower in FoodDatabase.FOOD_CALORIES:
@@ -156,6 +235,7 @@ class FoodDatabase:
                 'food': food_name,
                 'calories': round(cal_per_100g * amount_g / 100, 1),
                 'amount_g': amount_g,
+                'amount_display': display,
                 'match': 'exact'
             }
         
@@ -166,6 +246,7 @@ class FoodDatabase:
                     'food': food_name,
                     'calories': round(cal_per_100g * amount_g / 100, 1),
                     'amount_g': amount_g,
+                    'amount_display': display,
                     'match': 'approximate',
                     'matched_to': key
                 }
@@ -175,6 +256,7 @@ class FoodDatabase:
             'food': food_name,
             'calories': round(150 * amount_g / 100, 1),
             'amount_g': amount_g,
+            'amount_display': display,
             'match': 'generic_estimate'
         }
 
@@ -246,10 +328,15 @@ class CalorieTracker:
             rate_choice = input("Choose weight loss rate (1-3): ").strip()
             weight_loss_rate = rate_map.get(rate_choice, 'moderate')
             
+            ideal_weight = float(input("\nEnter your ideal/goal weight (kg): "))
+            
             # Calculate targets
             bmr = CalorieCalculator.calculate_bmr(weight, height, age, gender)
             tdee = CalorieCalculator.calculate_tdee(bmr, activity_level)
             target = CalorieCalculator.calculate_target_calories(tdee, weight_loss_rate)
+            ideal_tdee = CalorieCalculator.calculate_ideal_weight_tdee(weight, ideal_weight, height, age, gender, activity_level)
+            
+            weight_to_lose = weight - ideal_weight
             
             self.data['user_profile'] = {
                 'weight': weight,
@@ -258,17 +345,24 @@ class CalorieTracker:
                 'gender': gender,
                 'activity_level': activity_level,
                 'weight_loss_rate': weight_loss_rate,
+                'ideal_weight': ideal_weight,
                 'bmr': round(bmr, 1),
                 'tdee': round(tdee, 1),
-                'daily_target': round(target, 1)
+                'daily_target': round(target, 1),
+                'ideal_weight_tdee': round(ideal_tdee, 1)
             }
             
             self.save_data()
             
             print("\n✓ Profile saved!")
-            print(f"  BMR: {round(bmr)} calories/day")
-            print(f"  TDEE: {round(tdee)} calories/day")
-            print(f"  Daily Target: {round(target)} calories/day")
+            print(f"  Current Weight: {weight} kg")
+            print(f"  Goal Weight: {ideal_weight} kg")
+            print(f"  Weight to Lose: {round(weight_to_lose, 1)} kg")
+            print(f"\n  BMR (Current): {round(bmr)} calories/day")
+            print(f"  Maintenance (Current): {round(tdee)} calories/day")
+            print(f"  Maintenance (At Goal): {round(ideal_tdee)} calories/day")
+            print(f"  Daily Target (Deficit): {round(target)} calories/day")
+            print(f"  Daily Deficit: {round(tdee - target)} calories")
             
         except ValueError:
             print("✗ Invalid input. Please try again.")

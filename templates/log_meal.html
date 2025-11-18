@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Log Meal - Calorie Tracker{% endblock %}
+{% block header %}Log a Meal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST" id="meal-form">
+        <div class="form-group">
+            <label for="meal_name">Meal Name</label>
+            <input type="text" id="meal_name" name="meal_name" required 
+                   placeholder="e.g., breakfast, lunch, snack">
+        </div>
+        
+        <div id="food-items">
+            <div class="food-entry" style="margin-bottom: 1rem; padding: 1rem; background: var(--light); border-radius: 8px;">
+                <div class="form-group">
+                    <label>Food Item</label>
+                    <input type="text" name="food[]" required placeholder="e.g., iced matcha latte">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" step="0.1" name="amount[]" required value="1" placeholder="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Unit</label>
+                        <select name="unit[]" required>
+                            <option value="serving">Serving</option>
+                            <option value="piece">Piece</option>
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                            <option value="cup">Cup (240ml)</option>
+                            <option value="bowl">Bowl</option>
+                            <option value="slice">Slice</option>
+                            <option value="handful">Handful</option>
+                            <option value="g">Grams (g)</option>
+                            <option value="ml">Milliliters (ml)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button type="button" class="btn btn-secondary" onclick="addFoodItem()" style="margin-bottom: 1rem;">
+            ➕ Add Another Food Item
+        </button>
+        
+        <button type="submit" class="btn btn-primary">
+            ✓ Log This Meal
+        </button>
+    </form>
+</div>
+
+<div class="card">
+    <h3 class="card-title">💡 Quick Tips</h3>
+    <ul style="color: var(--gray); line-height: 2; padding-left: 1.5rem;">
+        <li><strong>Serving</strong> = typical restaurant portion (~100g)</li>
+        <li><strong>Piece</strong> = one item (sandwich, fruit, etc.)</li>
+        <li><strong>Small/Medium/Large</strong> = relative portion sizes</li>
+        <li><strong>Cup</strong> = 240ml for drinks</li>
+        <li>Use grams only when you know exact weight</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addFoodItem() {
+    const container = document.getElementById('food-items');
+    const newEntry = document.createElement('div');
+    newEntry.className = 'food-entry';
+    newEntry.style.marginBottom = '1rem';
+    newEntry.style.padding = '1rem';
+    newEntry.style.background = 'var(--light)';
+    newEntry.style.borderRadius = '8px';
+    newEntry.style.position = 'relative';
+    
+    newEntry.innerHTML = `
+        <button type="button" onclick="this.parentElement.remove()" 
+                style="position: absolute; top: 0.5rem; right: 0.5rem; background: var(--danger); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 1rem;">
+            ✕
+        </button>
+        <div class="form-group">
+            <label>Food Item</label>
+            <input type="text" name="food[]" required placeholder="e.g., sandwich">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" step="0.1" name="amount[]" required value="1" placeholder="1">
+            </div>
+            <div class="form-group">
+                <label>Unit</label>
+                <select name="unit[]" required>
+                    <option value="serving">Serving</option>
+                    <option value="piece">Piece</option>
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                    <option value="cup">Cup (240ml)</option>
+                    <option value="bowl">Bowl</option>
+                    <option value="slice">Slice</option>
+                    <option value="handful">Handful</option>
+                    <option value="g">Grams (g)</option>
+                    <option value="ml">Milliliters (ml)</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newEntry);
+}
+</script>
+{% endblock %}

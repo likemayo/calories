@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Calorie Tracker{% endblock %}
+{% block header %}Today's Summary{% endblock %}
+
+{% block content %}
+{% if profile.safety_floor_applied %}
+<div class="card">
+    <div class="alert alert-warning" style="margin: 0;">
+        ⚠️ Selected "{{ profile.weight_loss_rate }}" aims for {{ profile.intended_daily_deficit|round|int }} cal/day,
+        but your actual deficit is {{ profile.actual_daily_deficit|round|int }} cal/day due to the
+        minimum {{ profile.min_safe_calories }} cal/day. See Profile for details.
+    </div>
+</div>
+{% endif %}
+<div class="card">
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-value">{{ target }}</div>
+            <div class="stat-label">Target</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{ total_consumed }}</div>
+            <div class="stat-label">Consumed</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" style="color: {% if remaining < 0 %}var(--danger){% else %}var(--primary){% endif %}">
+                {{ remaining }}
+            </div>
+            <div class="stat-label">Remaining</div>
+        </div>
+    </div>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progress_percent }}%; {% if progress_percent > 100 %}background: var(--danger){% endif %}">
+            {{ progress_percent }}%
+        </div>
+    </div>
+    
+    {% if remaining < 0 %}
+    <div class="alert alert-warning">
+        ⚠️ You're over your target by {{ remaining|abs }} calories today
+    </div>
+    {% elif remaining < 200 %}
+    <div class="alert alert-success">
+        ✓ Almost there! You're very close to your target
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 class="card-title">Today's Meals</h2>
+    
+    {% if meals %}
+        {% for meal in meals %}
+        <div class="meal-item">
+            <div class="meal-header">
+                <span class="meal-name">{{ meal.meal_name }}</span>
+                <span class="meal-calories">{{ meal.total_calories|round|int }} cal</span>
+            </div>
+            <div class="meal-time">{{ meal.timestamp.split()[1] }}</div>
+            {% for item in meal.items %}
+            <div class="food-item">
+                • {{ item.food }} ({{ item.amount_display }}) - {{ item.calories|round|int }} cal
+                {% if item.match == 'approximate' %}
+                <span class="badge badge-warning">~</span>
+                {% elif item.match == 'generic_estimate' %}
+                <span class="badge badge-info">?</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <div style="margin-top: 0.5rem;">
+                <a href="{{ url_for('delete_meal', meal_index=loop.index0) }}" 
+                   class="btn btn-danger btn-small"
+                   onclick="return confirm('Delete this meal?')">
+                    🗑️ Delete
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">🍽️</div>
+        <p>No meals logged yet today</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+            Tap the "Log Meal" button below to get started
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <p style="text-align: center; color: var(--gray);">
+        📅 {{ today }}
+    </p>
+</div>
+{% endblock %}

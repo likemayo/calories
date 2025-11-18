@@ -1,0 +1,23 @@
+{
+  "user_profile": {
+    "weight": 52.0,
+    "height": 158.0,
+    "age": 22,
+    "gender": "female",
+    "activity_level": "sedentary",
+    "weight_loss_rate": "moderate",
+    "ideal_weight": 47.0,
+    "bmr": 1236.5,
+    "tdee": 1483.8,
+    "daily_target": 1200,
+    "ideal_weight_tdee": 1423.8,
+    "intended_daily_deficit": 550.0,
+    "actual_daily_deficit": 283.8,
+    "safety_floor_applied": true,
+    "min_safe_calories": 1200,
+    "estimated_days_to_goal": 136,
+    "estimated_weeks_to_goal": 19.4,
+    "estimated_goal_date": "2026-04-03"
+  },
+  "meals": {}
+}

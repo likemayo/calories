@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Estimate Calories - Calorie Tracker{% endblock %}
+{% block header %}Calorie Estimator{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label for="food">Food Name</label>
+            <input type="text" id="food" name="food" required 
+                   placeholder="e.g., iced matcha latte, bulgogi sandwich">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" step="0.1" id="amount" name="amount" 
+                       value="1" required placeholder="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="unit">Unit</label>
+                <select id="unit" name="unit" required>
+                    <option value="serving">Serving</option>
+                    <option value="piece">Piece</option>
+                    <option value="small">Small</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="large">Large</option>
+                    <option value="cup">Cup (240ml)</option>
+                    <option value="bowl">Bowl</option>
+                    <option value="slice">Slice</option>
+                    <option value="handful">Handful</option>
+                    <option value="g">Grams (g)</option>
+                    <option value="ml">Milliliters (ml)</option>
+                </select>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            🔍 Estimate Calories
+        </button>
+    </form>
+</div>
+
+{% if result %}
+<div class="card">
+    <h2 class="card-title">Results</h2>
+    
+    <div style="text-align: center; padding: 1rem 0;">
+        <div style="font-size: 3rem; font-weight: 700; color: var(--primary);">
+            {{ result.calories|round|int }}
+        </div>
+        <div style="color: var(--gray); margin-top: 0.5rem;">calories</div>
+    </div>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+        <p><strong>Food:</strong> {{ result.food }}</p>
+        <p><strong>Amount:</strong> {{ result.amount_display }}</p>
+        <p style="font-size: 0.85rem; color: var(--gray);"><em>(~{{ result.amount_g|round|int }}g equivalent)</em></p>
+        <p><strong>Match Type:</strong> 
+            {% if result.match == 'exact' %}
+            <span class="badge badge-success">Exact Match</span>
+            {% elif result.match == 'approximate' %}
+            <span class="badge badge-warning">Approximate ({{ result.matched_to }})</span>
+            {% else %}
+            <span class="badge badge-info">Generic Estimate</span>
+            {% endif %}
+        </p>
+    </div>
+    
+    {% if remaining is not none %}
+    <div style="margin-top: 1rem;">
+        <p style="font-weight: 600; margin-bottom: 0.5rem;">Today's Budget:</p>
+        <p style="color: var(--gray);">
+            You have <strong style="color: var(--primary);">{{ remaining|round|int }} calories</strong> remaining today.
+        </p>
+        
+        {% if result.calories <= remaining %}
+        <div class="alert alert-success">
+            ✓ This fits within your remaining budget!
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            ⚠️ This would exceed your budget by {{ (result.calories - remaining)|round|int }} calories
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 class="card-title">🍎 Common Foods</h3>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+        <button class="btn btn-secondary btn-small" onclick="quickEstimate('iced latte', '1', 'cup')">
+            Iced Latte
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="quickEstimate('sandwich', '1', 'piece')">
+            Sandwich
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="quickEstimate('chicken breast', '1', 'serving')">
+            Chicken Serving
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="quickEstimate('rice', '1', 'bowl')">
+            Bowl of Rice
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="quickEstimate('banana', '1', 'piece')">
+            Banana
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="quickEstimate('apple', '1', 'piece')">
+            Apple
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickEstimate(food, amount, unit) {
+    document.getElementById('food').value = food;
+    document.getElementById('amount').value = amount;
+    document.getElementById('unit').value = unit;
+    document.querySelector('form').submit();
+}
+</script>
+{% endblock %}

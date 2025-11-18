@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Calorie Tracker{% endblock %}
+{% block header %}Your Profile{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">Personal Information</h2>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Current Weight:</span>
+            <strong>{{ profile.weight }} kg</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Goal Weight:</span>
+            <strong style="color: var(--primary);">{{ profile.ideal_weight }} kg</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-top: 1px solid var(--border); margin-top: 0.5rem; padding-top: 1rem;">
+            <span style="color: var(--gray);">To Lose:</span>
+            <strong style="color: var(--secondary);">{{ (profile.weight - profile.ideal_weight)|round(1) }} kg</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Height:</span>
+            <strong>{{ profile.height }} cm</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Age:</span>
+            <strong>{{ profile.age }} years</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Gender:</span>
+            <strong style="text-transform: capitalize;">{{ profile.gender }}</strong>
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Activity & Goals</h2>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Activity Level:</span>
+            <strong style="text-transform: capitalize;">{{ profile.activity_level.replace('_', ' ') }}</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Weight Loss Rate:</span>
+            <strong style="text-transform: capitalize;">{{ profile.weight_loss_rate }}</strong>
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Calorie Calculations</h2>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">BMR (Current):</span>
+            <strong>{{ profile.bmr|round|int }} cal/day</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">TDEE (Current):</span>
+            <strong>{{ profile.tdee|round|int }} cal/day</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+            <span style="color: var(--gray);">Daily Deficit:</span>
+            <strong style="color: var(--danger);">-{{ (profile.tdee - profile.daily_target)|round|int }} cal/day</strong>
+        </p>
+        <p style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-top: 2px solid var(--border); margin-top: 0.5rem; padding-top: 0.5rem;">
+            <span style="color: var(--gray); font-weight: 600;">Daily Target:</span>
+            <strong style="color: var(--primary); font-size: 1.2rem;">{{ profile.daily_target|round|int }} cal/day</strong>
+        </p>
+    </div>
+    
+    <div class="alert alert-success">
+        ℹ️ Eating {{ (profile.tdee - profile.daily_target)|round|int }} calories below your TDEE daily<br>
+        💡 Once you reach {{ profile.ideal_weight }} kg, your TDEE will be {{ profile.ideal_weight_tdee|round|int }} cal/day
+    </div>
+
+    {% if profile.safety_floor_applied %}
+    <div class="alert alert-warning" style="margin-top: 0.5rem;">
+        ⚠️ Your selected rate ({{ profile.weight_loss_rate }}) aims for {{ profile.intended_daily_deficit|round|int }} cal/day,
+        but your actual deficit is {{ profile.actual_daily_deficit|round|int }} cal/day due to the minimum {{ profile.min_safe_calories }} cal/day.
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 class="card-title">Timeline</h2>
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px;">
+        {% set to_lose = (profile.weight - profile.ideal_weight)|round(1) %}
+        {% if to_lose <= 0 %}
+        <div class="alert alert-info">You're already at or below your goal weight.</div>
+        {% else %}
+            {% if profile.actual_daily_deficit <= 0 %}
+            <div class="alert alert-warning">Current plan has no daily deficit. Increase your deficit to make progress.</div>
+            {% else %}
+            <p style="color: var(--gray);">
+                Weight to lose: <strong>{{ to_lose }} kg</strong><br>
+                Daily deficit: <strong>{{ profile.actual_daily_deficit|round|int }} cal/day</strong>
+            </p>
+            {% set days_val = profile.estimated_days_to_goal if profile.estimated_days_to_goal is not none else ((to_lose * 7700) / (profile.actual_daily_deficit))|round(0, 'ceil')|int %}
+            {% set weeks_val = profile.estimated_weeks_to_goal if profile.estimated_weeks_to_goal is not none else (days_val / 7)|round(1) %}
+            <div class="alert alert-success" style="margin-top: 0.5rem;">
+                Estimated time: <strong>~ {{ weeks_val }} weeks</strong>
+                {% if days_val %}
+                (<span>{{ days_val }}</span> days)
+                {% endif %}
+                {% if profile.estimated_goal_date %}
+                <br>Estimated goal date: <strong>{{ profile.estimated_goal_date }}</strong>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <a href="{{ url_for('setup_profile') }}" class="btn btn-secondary">
+        ✏️ Update Profile
+    </a>
+</div>
+
+<div class="card">
+    <h3 class="card-title">📖 Understanding Your Numbers</h3>
+    <div style="color: var(--gray); line-height: 1.8;">
+        <p style="margin-bottom: 1rem;">
+            <strong>BMR (Basal Metabolic Rate):</strong> The calories your body burns at rest just to maintain basic functions.
+        </p>
+        <p style="margin-bottom: 1rem;">
+            <strong>TDEE (Current):</strong> Your Total Daily Energy Expenditure - the calories you burn daily with your current weight and activity level. Eat this to maintain your current weight.
+        </p>
+        <p style="margin-bottom: 1rem;">
+            <strong>Daily Deficit:</strong> How many calories below your TDEE you need to eat each day to lose weight at your chosen rate.
+        </p>
+        <p>
+            <strong>Daily Target:</strong> Your eating goal - this is your TDEE minus your daily deficit.
+        </p>
+    </div>
+</div>
+{% endblock %}

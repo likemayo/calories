@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Your Calorie Plan - Calorie Tracker{% endblock %}
+{% block header %}Your Personalized Plan{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">🎯 Your Weight Loss Journey</h2>
+    
+    <div style="text-align: center; padding: 1.5rem; background: var(--light); border-radius: 8px; margin-bottom: 1.5rem;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">
+            {{ results.weight }} kg → {{ results.ideal_weight }} kg
+        </div>
+        <div style="color: var(--gray); margin-top: 0.5rem; font-size: 1.1rem;">
+            {{ results.weight_to_lose }} kg to lose
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">📊 Step 1: Calculate Your BMR</h2>
+    <p style="color: var(--gray); margin-bottom: 1rem;">
+        Your <strong>Basal Metabolic Rate (BMR)</strong> is the energy your body needs at complete rest.
+    </p>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px;">
+        <p style="font-family: monospace; color: var(--gray); font-size: 0.9rem; line-height: 1.8;">
+            Using Mifflin-St Jeor Equation:
+            {% if results.gender == 'male' %}
+            <br>BMR = 10 × {{ results.weight }} + 6.25 × height - 5 × age + 5
+            {% else %}
+            <br>BMR = 10 × {{ results.weight }} + 6.25 × height - 5 × age - 161
+            {% endif %}
+        </p>
+        <div style="text-align: center; margin-top: 1rem;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">
+                {{ results.bmr }} cal/day
+            </div>
+            <div style="color: var(--gray); font-size: 0.9rem;">Your BMR</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">🏃 Step 2: Calculate TDEE (Maintenance)</h2>
+    <p style="color: var(--gray); margin-bottom: 1rem;">
+        Your <strong>Total Daily Energy Expenditure (TDEE)</strong> is your maintenance calories - it includes your activity level.
+    </p>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <p style="color: var(--gray);">
+            Activity Level: <strong style="text-transform: capitalize;">{{ results.activity_level.replace('_', ' ') }}</strong>
+        </p>
+        <p style="font-family: monospace; color: var(--gray); font-size: 0.9rem; margin-top: 0.5rem;">
+            {% if results.activity_level == 'sedentary' %}
+            Maintenance = BMR × 1.2
+            {% elif results.activity_level == 'light' %}
+            Maintenance = BMR × 1.375
+            {% elif results.activity_level == 'moderate' %}
+            Maintenance = BMR × 1.55
+            {% elif results.activity_level == 'active' %}
+            Maintenance = BMR × 1.725
+            {% elif results.activity_level == 'very_active' %}
+            Maintenance = BMR × 1.9
+            {% endif %}
+        </p>
+        <div style="text-align: center; margin-top: 1rem;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">
+                {{ results.tdee }} cal/day
+            </div>
+            <div style="color: var(--gray); font-size: 0.9rem;">Your TDEE (Current Maintenance)</div>
+        </div>
+    </div>
+    
+    <div class="alert alert-success">
+        ℹ️ Your TDEE is {{ results.tdee }} cal/day - eating this amount will maintain your current weight of {{ results.weight }} kg
+    </div>
+</div>
+
+
+<div class="card">
+    <h2 class="card-title">🎯 Step 3: Calculate Your Target (Deficit)</h2>
+    <p style="color: var(--gray); margin-bottom: 1rem;">
+        To lose weight, you need a <strong>calorie deficit</strong> below your TDEE.
+    </p>
+    
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        {% set tdee = results.tdee %}
+        {% set intended = results.intended_daily_deficit %}
+        {% set raw_target = (tdee - intended)|round(1) %}
+        {% set min_safe = results.min_safe_calories %}
+        {% set target = results.target %}
+        {% set actual_deficit = (tdee - target)|round(1) %}
+        <p style="color: var(--gray);">
+            Weight Loss Rate: <strong style="text-transform: capitalize;">{{ results.weight_loss_rate }}</strong>
+        </p>
+        <p style="font-family: monospace; color: var(--gray); font-size: 0.9rem; margin-top: 0.5rem;">
+            Intended deficit = {{ intended|round|int }} cal/day
+            <br>Raw target = TDEE - Intended deficit
+            <br>Raw target = {{ tdee }} - {{ intended|round|int }} = {{ raw_target }}
+        </p>
+        <div style="text-align: center; margin-top: 0.5rem;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">
+                {{ actual_deficit|round|int }} cal/day
+            </div>
+            <div style="color: var(--gray); font-size: 0.9rem;">Daily Deficit</div>
+        </div>
+        {% if results.safety_floor_applied %}
+        <div class="alert alert-warning" style="margin-top: 0.75rem;">
+            ⚠️ Raw target ({{ raw_target }}) is below the minimum {{ min_safe }} cal/day.<br>
+            Daily Target is set to <strong>{{ target }}</strong> cal/day.
+        </div>
+        {% endif %}
+    </div>
+</div>
+<div class="card">
+    <h2 class="card-title">🏆 Step 4: Your Daily Target</h2>
+    <p style="color: var(--gray); margin-bottom: 1rem;">
+        Your plan's <strong>Daily Target</strong> based on your selections:
+    </p>
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px;">
+        <div style="text-align: center; margin-top: 0.75rem;">
+            <div style="font-size: 1.6rem; font-weight: 700; color: var(--secondary);">
+                {{ results.target|round|int }} cal/day
+            </div>
+            <div style="color: var(--gray); font-size: 0.9rem;">Daily Target</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">⏳ Step 5: Time To Goal</h2>
+    <div style="background: var(--light); padding: 1rem; border-radius: 8px;">
+        {% set to_lose = results.weight_to_lose %}
+        {% if to_lose <= 0 %}
+        <div class="alert alert-info">You're already at or below your goal weight.</div>
+        {% else %}
+            {% if results.actual_daily_deficit <= 0 %}
+            <div class="alert alert-warning">Current plan has no daily deficit. Increase your deficit to make progress.</div>
+            {% else %}
+            <p style="color: var(--gray);">
+                Weight to lose: <strong>{{ to_lose }} kg</strong><br>
+                Daily deficit: <strong>{{ results.actual_daily_deficit|round|int }} cal/day</strong>
+            </p>
+            {% set days_val = results.estimated_days_to_goal if results.estimated_days_to_goal is not none else ((to_lose * 7700) / (results.actual_daily_deficit))|round(0, 'ceil')|int %}
+            {% set weeks_val = results.estimated_weeks_to_goal if results.estimated_weeks_to_goal is not none else (days_val / 7)|round(1) %}
+            <div class="alert alert-success" style="margin-top: 0.5rem;">
+                Estimated time: <strong>~ {{ weeks_val }} weeks</strong>
+                {% if days_val %}
+                (<span>{{ days_val }}</span> days)
+                {% endif %}
+                {% if results.estimated_goal_date %}
+                <br>Estimated goal date: <strong>{{ results.estimated_goal_date }}</strong>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">📈 Summary</h2>
+    
+    <div style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 1.5rem; border-radius: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.3);">
+                <span>Current Weight:</span>
+                <strong>{{ results.weight }} kg</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.3);">
+                <span>Goal Weight:</span>
+                <strong>{{ results.ideal_weight }} kg</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.3);">
+                <span>TDEE (Current):</span>
+                <strong>{{ results.tdee }} cal/day</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.3);">
+                <span>TDEE (At Goal):</span>
+                <strong>{{ results.ideal_tdee }} cal/day</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 1.2rem;">
+                <span style="font-weight: 600;">Daily Target:</span>
+                <strong>{{ results.target }} cal/day</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        🚀 Start Tracking
+    </a>
+</div>
+{% endblock %}
+
+{% block bottom_nav %}{% endblock %}
